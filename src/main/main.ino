@@ -1,17 +1,8 @@
-/*
-   Based on 31337Ghost's reference code from https://github.com/nkolban/esp32-snippets/issues/385#issuecomment-362535434
-   which is based on pcbreflux's Arduino ESP32 port of Neil Kolban's example for IDF: https://github.com/nkolban/esp32-snippets/blob/master/cpp_utils/tests/BLE%20Tests/SampleScan.cpp
-*/
 
-/*
-   Create a BLE server that will send periodic iBeacon frames.
-   The design of creating the BLE server is:
-   1. Create a BLE Server
-   2. Create advertising data
-   3. Start advertising.
-   4. wait
-   5. Stop advertising.
-*/
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
+
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -27,8 +18,43 @@
 BLEServer *pServer;
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
-uint8_t value = 0;
-std::string stURL="Hola";
+bool mode_set_url = false;
+
+bool readFile(fs::FS &fs, const char * path, const char * message,int &rlen){
+    Serial.printf("Reading file: %s\n", path);
+
+    File file = fs.open(path);
+    if(!file){
+        Serial.println("Failed to open file for reading");
+        return false;
+    }
+
+    Serial.print("Read from file: ");
+    
+    rlen = file.available();
+
+    file.read((uint8_t *) message, rlen);
+
+    file.close();
+
+    return true;
+}
+
+void writeFile(fs::FS &fs, const char * path, const char * message){
+    Serial.printf("Writing file: %s\n", path);
+
+    File file = fs.open(path, FILE_WRITE);
+    if(!file){
+        Serial.println("Failed to open file for writing");
+        return;
+    }
+    if(file.print(message)){
+        Serial.println("File written");
+    } else {
+        Serial.println("Write failed");
+    }
+    file.close();
+}
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -50,34 +76,38 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-      /*std::string rxValue = pCharacteristic->getValue();
-
-      if (rxValue.length() > 0) {
-        Serial.println("*********");
-        Serial.print("Received Value: ");
-        for (int i = 0; i < rxValue.length(); i++) {
-          Serial.print(rxValue[i]);
-        }
-        Serial.println();
-        Serial.println("*********");
-
-      }*/
+      
+      std::string stURL;
 
       stURL=pCharacteristic->getValue();
 
-      Serial.print("Received Value: ");
-      Serial.println(stURL.c_str());
+      if (mode_set_url) {
+        mode_set_url=false;
+
+        writeFile(SD,"/url.txt",stURL.c_str());
+        Serial.print("Saved URL: ");
+        Serial.println(stURL.c_str());
+      }
+      else {
+        if (stURL=="password") {
+            mode_set_url=true;
+
+            Serial.println("Waiting URL to save...");
+        }
+      }
 
     }
 
     void onRead(BLECharacteristic *pCharacteristic) {
-      /*uint8_t url[265]="http://google.com";
+      char url[256]="";
+      int size;
 
-      Serial.printf("*** NOTIFY: %s ***\n", url);
-      pCharacteristic->setValue((uint8_t *) url, strlen((const char *) url)+1);*/
-
-
-      pCharacteristic->setValue((uint8_t *) stURL.c_str(), stURL.length());
+      if (readFile(SD,"/url.txt",url,size)) {
+        pCharacteristic->setValue((uint8_t *) url, size);
+      }
+      else {
+        pCharacteristic->setValue("ERROR");
+      }
       pCharacteristic->notify();
     }
 };
@@ -135,6 +165,29 @@ void setup() {
   Serial.println("Initializing...");
   Serial.flush();
 
+  if(!SD.begin()){
+    Serial.println("Card Mount Failed");
+    return;
+  }
+  
+  uint8_t cardType = SD.cardType();
+
+  if(cardType == CARD_NONE){
+    Serial.println("No SD card attached");
+    return;
+  }
+
+  Serial.print("SD Card Type: ");
+  if(cardType == CARD_MMC){
+      Serial.println("MMC");
+  } else if(cardType == CARD_SD){
+      Serial.println("SDSC");
+  } else if(cardType == CARD_SDHC){
+      Serial.println("SDHC");
+  } else {
+      Serial.println("UNKNOWN");
+  }
+
   BLEDevice::init(DEVICE_NAME);
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
@@ -146,11 +199,5 @@ void setup() {
 }
 
 void loop() {
-  /*if (deviceConnected) {
-    Serial.printf("*** NOTIFY: %X ***\n", value);
-    pCharacteristic->setValue(&value, 1);
-    pCharacteristic->notify();
-    value++;
-  }*/
-  delay(2000);
+  
 }
