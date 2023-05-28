@@ -15,6 +15,16 @@
 #define BEACON_UUID_REV        "A134D0B2-1DA2-1BA7-C94C-E8E00C9F7A2D"
 #define CHARACTERISTIC_UUID    "82258BAA-DF72-47E8-99BC-B73D7ECD08A5"
 
+/*<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="refresh" content="2; url='https://es.wikipedia.org/wiki/Pablo_Picasso'" />
+  </head>
+  <body>
+    <p>You will be redirected soon! .. </p>
+  </body>
+</html>*/
+
 BLEServer *pServer;
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
