@@ -15,15 +15,24 @@
 #define BEACON_UUID_REV        "A134D0B2-1DA2-1BA7-C94C-E8E00C9F7A2D"
 #define CHARACTERISTIC_UUID    "82258BAA-DF72-47E8-99BC-B73D7ECD08A5"
 
-/*<!DOCTYPE html>
-<html>
-  <head>
-    <meta http-equiv="refresh" content="2; url='https://es.wikipedia.org/wiki/Pablo_Picasso'" />
-  </head>
-  <body>
-    <p>You will be redirected soon! .. </p>
-  </body>
-</html>*/
+#include <WiFi.h>
+
+const char* ssid     = "yourssid";
+const char* password = "yourpasswd";
+
+WiFiServer server(80);
+
+#define head "<!DOCTYPE html> \
+<html> \
+  <head> \
+    <meta http-equiv=\"refresh\" content=\"2; url='"
+    
+#define tail "'\" /> \
+  </head> \
+  <body> \
+    <p>You will be redirected soon! .. </p> \
+  </body> \
+</html>"
 
 BLEServer *pServer;
 BLECharacteristic *pCharacteristic;
@@ -35,11 +44,11 @@ bool readFile(fs::FS &fs, const char * path, const char * message,int &rlen){
 
     File file = fs.open(path);
     if(!file){
-        Serial.println("Failed to open file for reading");
+        //Serial.println("Failed to open file for reading");
         return false;
     }
 
-    Serial.print("Read from file: ");
+    //Serial.print("Read from file: ");
     
     rlen = file.available();
 
@@ -51,17 +60,17 @@ bool readFile(fs::FS &fs, const char * path, const char * message,int &rlen){
 }
 
 void writeFile(fs::FS &fs, const char * path, const char * message){
-    Serial.printf("Writing file: %s\n", path);
+    //Serial.printf("Writing file: %s\n", path);
 
     File file = fs.open(path, FILE_WRITE);
     if(!file){
-        Serial.println("Failed to open file for writing");
+        //Serial.println("Failed to open file for writing");
         return;
     }
     if(file.print(message)){
-        Serial.println("File written");
+        //Serial.println("File written");
     } else {
-        Serial.println("Write failed");
+        //Serial.println("Write failed");
     }
     file.close();
 }
@@ -108,7 +117,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
     }
 
-    void onRead(BLECharacteristic *pCharacteristic) {
+    /*void onRead(BLECharacteristic *pCharacteristic) {
       char url[256]="";
       int size;
 
@@ -119,7 +128,7 @@ class MyCallbacks: public BLECharacteristicCallbacks {
         pCharacteristic->setValue("ERROR");
       }
       pCharacteristic->notify();
-    }
+    }*/
 };
 
 
@@ -169,9 +178,30 @@ void init_beacon() {
   pAdvertising->start();
 }
 
+void wifi_setup() {
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  
+  server.begin();
+}
+
 void setup() {
   Serial.begin(115200);
-  Serial.println();
+  //Serial.println();
   Serial.println("Initializing...");
   Serial.flush();
 
@@ -187,16 +217,7 @@ void setup() {
     return;
   }
 
-  Serial.print("SD Card Type: ");
-  if(cardType == CARD_MMC){
-      Serial.println("MMC");
-  } else if(cardType == CARD_SD){
-      Serial.println("SDSC");
-  } else if(cardType == CARD_SDHC){
-      Serial.println("SDHC");
-  } else {
-      Serial.println("UNKNOWN");
-  }
+  wifi_setup();
 
   BLEDevice::init(DEVICE_NAME);
   pServer = BLEDevice::createServer();
@@ -209,5 +230,29 @@ void setup() {
 }
 
 void loop() {
-  
+  WiFiClient client = server.available(); 
+
+  if (client) {                        
+    //Serial.println("New Client."); 
+    while (client.connected()) {  
+      while (client.available()) { 
+        client.read(); 
+      }
+
+      char url[256]="";
+      int size;
+      
+      if (readFile(SD,"/url.txt",url,size)) {
+        client.println("HTTP/1.1 200 OK");
+        client.println("Content-type:text/html");
+        client.print(head);
+        client.print(url);
+        client.println(tail);
+      }
+      
+    }
+    
+    client.stop();
+    //Serial.println("Client Disconnected.");
+  }
 }
