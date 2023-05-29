@@ -1,8 +1,4 @@
 
-#include "FS.h"
-#include "SD.h"
-#include "SPI.h"
-
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -16,6 +12,8 @@
 #define CHARACTERISTIC_UUID    "82258BAA-DF72-47E8-99BC-B73D7ECD08A5"
 
 #include <WiFi.h>
+
+std::string stURL="http://google.es";
 
 const char* ssid     = "yourssid";
 const char* password = "yourpasswd";
@@ -32,48 +30,12 @@ WiFiServer server(80);
   <body> \
     <p>You will be redirected soon! .. </p> \
   </body> \
-</html>"
+</html>\r\n\r\n"
 
 BLEServer *pServer;
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
 bool mode_set_url = false;
-
-bool readFile(fs::FS &fs, const char * path, const char * message,int &rlen){
-    Serial.printf("Reading file: %s\n", path);
-
-    File file = fs.open(path);
-    if(!file){
-        //Serial.println("Failed to open file for reading");
-        return false;
-    }
-
-    //Serial.print("Read from file: ");
-    
-    rlen = file.available();
-
-    file.read((uint8_t *) message, rlen);
-
-    file.close();
-
-    return true;
-}
-
-void writeFile(fs::FS &fs, const char * path, const char * message){
-    //Serial.printf("Writing file: %s\n", path);
-
-    File file = fs.open(path, FILE_WRITE);
-    if(!file){
-        //Serial.println("Failed to open file for writing");
-        return;
-    }
-    if(file.print(message)){
-        //Serial.println("File written");
-    } else {
-        //Serial.println("Write failed");
-    }
-    file.close();
-}
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -93,22 +55,26 @@ class MyServerCallbacks: public BLEServerCallbacks {
     }
 };
 
+
+//************************************************************
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-      
-      std::string stURL;
 
-      stURL=pCharacteristic->getValue();
+      std::string tmp;
+
+      tmp=pCharacteristic->getValue();
 
       if (mode_set_url) {
         mode_set_url=false;
 
-        writeFile(SD,"/url.txt",stURL.c_str());
+        stURL=tmp;
+        
         Serial.print("Saved URL: ");
         Serial.println(stURL.c_str());
+
       }
       else {
-        if (stURL=="password") {
+        if (tmp=="password") {
             mode_set_url=true;
 
             Serial.println("Waiting URL to save...");
@@ -117,19 +83,14 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
     }
 
-    /*void onRead(BLECharacteristic *pCharacteristic) {
-      char url[256]="";
-      int size;
-
-      if (readFile(SD,"/url.txt",url,size)) {
-        pCharacteristic->setValue((uint8_t *) url, size);
-      }
-      else {
-        pCharacteristic->setValue("ERROR");
-      }
+    void onRead(BLECharacteristic *pCharacteristic) {
+      
+      pCharacteristic->setValue(stURL);
       pCharacteristic->notify();
-    }*/
+
+    }
 };
+//*******************************************************************
 
 
 void init_service() {
@@ -178,8 +139,26 @@ void init_beacon() {
   pAdvertising->start();
 }
 
-void wifi_setup() {
+void setup() {
+  Serial.begin(115200);
   Serial.println();
+  Serial.println("Initializing...");
+  Serial.flush();
+
+//Bluetooth ...
+
+  BLEDevice::init(DEVICE_NAME);
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  init_service();
+  init_beacon();
+
+  Serial.println("iBeacon + service defined and advertising!");
+
+//Wifi ....
+
+  /*Serial.println();
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -196,63 +175,26 @@ void wifi_setup() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
   
-  server.begin();
-}
-
-void setup() {
-  Serial.begin(115200);
-  //Serial.println();
-  Serial.println("Initializing...");
-  Serial.flush();
-
-  if(!SD.begin()){
-    Serial.println("Card Mount Failed");
-    return;
-  }
-  
-  uint8_t cardType = SD.cardType();
-
-  if(cardType == CARD_NONE){
-    Serial.println("No SD card attached");
-    return;
-  }
-
-  wifi_setup();
-
-  BLEDevice::init(DEVICE_NAME);
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
-
-  init_service();
-  init_beacon();
-
-  Serial.println("iBeacon + service defined and advertising!");
+  server.begin();*/
 }
 
 void loop() {
-  WiFiClient client = server.available(); 
+  /*WiFiClient client = server.available(); 
 
   if (client) {                        
-    //Serial.println("New Client."); 
     while (client.connected()) {  
       while (client.available()) { 
         client.read(); 
       }
-
-      char url[256]="";
-      int size;
       
-      if (readFile(SD,"/url.txt",url,size)) {
-        client.println("HTTP/1.1 200 OK");
-        client.println("Content-type:text/html");
-        client.print(head);
-        client.print(url);
-        client.println(tail);
-      }
+      client.println("HTTP/1.1 200 OK");
+      client.println("Content-type:text/html");
+      client.print(head);
+      client.print(stURL.c_str());
+      client.println(tail);
       
     }
     
     client.stop();
-    //Serial.println("Client Disconnected.");
-  }
+  }*/
 }
