@@ -189,8 +189,8 @@ void loop() {
       
       client.println("HTTP/1.1 200 OK");
       client.println("Content-type:text/html");
-      client.print(head);
-      client.print(stURL.c_str());
+      client.println(head);
+      client.println(stURL.c_str());
       client.println(tail);
       
     }
