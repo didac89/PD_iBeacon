@@ -96,9 +96,7 @@ void read_url_task(void * parameter) {
 void handle_root() {
   String html;
 
-  html=head;
-  html=html+stURL.c_str();
-  html=html+tail;
+  html=head+stURL.c_str()+tail;
 
   server.send(200, "text/html", html);
 
