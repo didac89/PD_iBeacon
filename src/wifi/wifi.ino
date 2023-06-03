@@ -68,15 +68,18 @@ void read_url_task(void * parameter) {
 
         if (dato==0) { //fin mensaje
 
+          xSemaphoreTake(mutex_url, portMAX_DELAY);
+
           if (stTMP!=stURL) {
 
             Serial.print("New URL: ");
             Serial.println(stTMP.c_str());
 
-            xSemaphoreTake(mutex_url, portMAX_DELAY);
             stURL=stTMP;
-            xSemaphoreGive(mutex_url);
+            
           }
+
+          xSemaphoreGive(mutex_url);
 
           stTMP="";
         }
