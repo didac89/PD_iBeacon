@@ -132,6 +132,8 @@ void setup() {
   Serial.println("Initializing...");
   Serial.flush();
 
+//serial 2
+
   Serial2.begin(115200);
 
   mutex_url = xSemaphoreCreateMutex();
@@ -153,12 +155,12 @@ void loop() {
 
   delay(2000);
 
-  Serial2.write(1);
+  Serial2.write(1); //inicio mensaje
 
   xSemaphoreTake(mutex_url, portMAX_DELAY);
-  Serial2.write(stURL.c_str());
+  Serial2.write(stURL.c_str()); //mensaje
   xSemaphoreGive(mutex_url);
 
-  Serial2.write(0);
+  Serial2.write(2); //fin mensaje
   
 }
