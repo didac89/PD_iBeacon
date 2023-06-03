@@ -32,7 +32,7 @@ void setup() {
 
 //serial 2
 
-  Serial2.begin(115200);
+  Serial2.begin(9600);
   xTaskCreate(read_url_task, "read_url_task",1000, NULL,1, NULL);
 
 //Wifi ....

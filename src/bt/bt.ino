@@ -128,7 +128,7 @@ void setup() {
 
 //serial 2
 
-  Serial2.begin(115200);
+  Serial2.begin(9600);
 
 //Bluetooth ...
 
