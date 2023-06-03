@@ -13,9 +13,11 @@
 
 BLEServer *pServer;
 BLECharacteristic *pCharacteristic;
-std::string stURL="http://google.es";
 bool deviceConnected = false;
 bool mode_set_url = false;
+
+std::string stURL="http://google.es";
+SemaphoreHandle_t mutex_url;
 
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -47,7 +49,9 @@ class MyCallbacks: public BLECharacteristicCallbacks {
       if (mode_set_url) {
         mode_set_url=false;
 
+        xSemaphoreTake(mutex_url, portMAX_DELAY);
         stURL=tmp;
+        xSemaphoreGive(mutex_url);
         
         Serial.print("Saved URL: ");
         Serial.println(stURL.c_str());
@@ -65,7 +69,10 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
     void onRead(BLECharacteristic *pCharacteristic) {
       
+      xSemaphoreTake(mutex_url, portMAX_DELAY);
       pCharacteristic->setValue(stURL);
+      xSemaphoreGive(mutex_url);
+
       pCharacteristic->notify();
 
     }
@@ -125,6 +132,10 @@ void setup() {
   Serial.println("Initializing...");
   Serial.flush();
 
+  Serial2.begin(115200);
+
+  mutex_url = xSemaphoreCreateMutex();
+
 //Bluetooth ...
 
   BLEDevice::init(DEVICE_NAME);
@@ -139,5 +150,15 @@ void setup() {
 }
 
 void loop() {
+
+  delay(2000);
+
+  Serial2.write(1);
+
+  xSemaphoreTake(mutex_url, portMAX_DELAY);
+  Serial2.write(stURL.c_str());
+  xSemaphoreGive(mutex_url);
+
+  Serial2.write(0);
   
 }
