@@ -12,17 +12,17 @@ const char* password = "yourpasswd";
 WebServer server(80);
 void handle_root();
 
-#define head "<!DOCTYPE html> \
+String head="<!DOCTYPE html> \
 <html> \
-  <head> \
-    <meta http-equiv=\"refresh\" content=\"2; url='"
+<head> \
+<meta http-equiv=\"refresh\" content=\"2; url='";
     
-#define tail "'\" /> \
-  </head> \
-  <body> \
-    <p>You will be redirected soon! .. </p> \
-  </body> \
-</html>\r\n\r\n"
+String tail="'\" /> \
+</head> \
+<body> \
+<p>You will be redirected soon! .. </p> \
+</body> \
+</html>";
 
 void setup() {
   Serial.begin(115200);
