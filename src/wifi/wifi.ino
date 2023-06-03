@@ -2,7 +2,6 @@
 #include <WiFi.h>
 
 std::string stURL="http://google.es";
-SemaphoreHandle_t mutex_url;
 
 void read_url_task(void * parameter);
 
@@ -68,8 +67,6 @@ void read_url_task(void * parameter) {
 
         if (dato==0) { //fin mensaje
 
-          xSemaphoreTake(mutex_url, portMAX_DELAY);
-
           if (stTMP!=stURL) {
 
             Serial.print("New URL: ");
@@ -78,8 +75,6 @@ void read_url_task(void * parameter) {
             stURL=stTMP;
             
           }
-
-          xSemaphoreGive(mutex_url);
 
           stTMP="";
         }
@@ -107,11 +102,7 @@ void loop() {
       client.println("HTTP/1.1 200 OK");
       client.println("Content-type:text/html");
       client.print(head);
-
-      xSemaphoreTake(mutex_url, portMAX_DELAY);
       client.print(stURL.c_str());
-      xSemaphoreGive(mutex_url);
-
       client.println(tail);
 
     }
