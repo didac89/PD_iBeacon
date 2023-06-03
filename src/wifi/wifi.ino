@@ -1,5 +1,6 @@
 
 #include <WiFi.h>
+#include <WebServer.h>
 
 std::string stURL="http://google.es";
 
@@ -8,7 +9,8 @@ void read_url_task(void * parameter);
 const char* ssid     = "yourssid";
 const char* password = "yourpasswd";
 
-WiFiServer server(80);
+WebServer server(80);
+void handle_root();
 
 #define head "<!DOCTYPE html> \
 <html> \
@@ -53,6 +55,8 @@ void setup() {
   Serial.println(WiFi.localIP());
   
   server.begin();
+  server.on("/", handle_root);
+
 }
 
 void read_url_task(void * parameter) {
@@ -89,24 +93,16 @@ void read_url_task(void * parameter) {
   }
 }
 
+void handle_root() {
+  String html;
+
+  html=head;
+  html=html+stURL.c_str();
+  html=html+tail;
+
+  server.send(200, "text/html", html);
+
+}
+
 void loop() {
-  WiFiClient client = server.available(); 
-
-  if (client) {                        
-    while (client.connected()) {
-
-      while (client.available()) { 
-        client.read(); 
-      }
-
-      client.println("HTTP/1.1 200 OK");
-      client.println("Content-type:text/html");
-      client.print(head);
-      client.print(stURL.c_str());
-      client.println(tail);
-
-    }
-    
-    client.stop();
-  }
 }
