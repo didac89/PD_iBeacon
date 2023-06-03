@@ -60,31 +60,36 @@ void read_url_task(void * parameter) {
   char dato;
   std::string stTMP;
 
-  while(Serial2.available() > 0){
+  while (1) {
 
-      dato=Serial2.read();
+    while (Serial2.available() > 0){
 
-      if (dato==1) { //inicio mensaje
-        stTMP="";
-      }
-      else if (dato==2) { //fin mensaje
+        dato=Serial2.read();
 
-        if (stTMP!=stURL) {
-
-          Serial.print("New URL: ");
-          Serial.println(stTMP.c_str());
-
-          xSemaphoreTake(mutex_url, portMAX_DELAY);
-          stURL=stTMP;
-          xSemaphoreGive(mutex_url);
+        if (dato==1) { //inicio mensaje
+          stTMP="";
         }
-      }
-      else { //mensaje
+        else if (dato==2) { //fin mensaje
 
-        stTMP=stTMP+dato;
-      }
+          if (stTMP!=stURL) {
+
+            Serial.print("New URL: ");
+            Serial.println(stTMP.c_str());
+
+            xSemaphoreTake(mutex_url, portMAX_DELAY);
+            stURL=stTMP;
+            xSemaphoreGive(mutex_url);
+          }
+        }
+        else { //mensaje
+
+          stTMP=stTMP+dato;
+        }
+    }
+
+    delay(500);
+
   }
-  delay(500);
 }
 
 void loop() {
