@@ -155,12 +155,10 @@ void loop() {
 
   delay(2000);
 
-  Serial2.write(1); //inicio mensaje
-
   xSemaphoreTake(mutex_url, portMAX_DELAY);
   Serial2.write(stURL.c_str()); //mensaje
   xSemaphoreGive(mutex_url);
 
-  Serial2.write(2); //fin mensaje
+  Serial2.write(0); //fin mensaje
   
 }

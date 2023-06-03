@@ -58,7 +58,7 @@ void setup() {
 
 void read_url_task(void * parameter) {
   char dato;
-  std::string stTMP;
+  std::string stTMP="";
 
   while (1) {
 
@@ -66,10 +66,7 @@ void read_url_task(void * parameter) {
 
         dato=Serial2.read();
 
-        if (dato==1) { //inicio mensaje
-          stTMP="";
-        }
-        else if (dato==2) { //fin mensaje
+        if (dato==0) { //fin mensaje
 
           if (stTMP!=stURL) {
 
@@ -80,6 +77,8 @@ void read_url_task(void * parameter) {
             stURL=stTMP;
             xSemaphoreGive(mutex_url);
           }
+
+          stTMP="";
         }
         else { //mensaje
 
